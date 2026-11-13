@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1018">
+  <title>ArmOS | Controle robótico</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <script type="importmap">
+    {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.166.1/build/three.module.js"}}
+  </script>
+</head>
+<body>
+<div class="shell">
+  <header class="topbar">
+    <a class="brand" href="/"><span class="brand-icon">A</span><span>ARM<span class="brand-muted">OS</span></span></a>
+    <div class="top-context"><span class="eyebrow">ROBOTIC CONTROL INTERFACE</span><span>Robotic Arm <b>/</b> Local station</span></div>
+    <div class="connection"><i id="connection-dot" class="dot"></i><span id="connection-label">Verificando servidor</span><span class="separator"></span><small>HTTP API</small></div>
+  </header>
+
+  <main>
+    <section class="intro">
+      <div>
+        <p class="eyebrow blue">PAINEL DE OPERAÇÃO <span class="rule"></span> 01 / CONTROLE</p>
+        <h1>Controle do <em>manipulador.</em></h1>
+        <p class="subtitle">Ajuste os eixos, visualize a pose em 3D e envie o conjunto de posições ao controlador.</p>
+      </div>
+      <div class="session"><small>ESTADO DA SESSÃO</small><strong id="session-state">AGUARDANDO</strong><span id="last-update">Nenhum comando enviado</span></div>
+    </section>
+
+    <section class="main-grid">
+      <section class="panel visual-panel">
+        <div class="panel-head">
+          <div class="head-title"><span class="index">01</span><div><h2>Visualização 3D</h2><p>Modelo cinemático ilustrativo</p></div></div>
+          <span class="live"><i></i> LIVE PREVIEW</span>
+        </div>
+        <div id="viewport" class="viewport">
+          <div class="hud hud-left"><small>PERSPECTIVA</small><b>3D · ORBIT</b></div>
+          <div class="hud hud-right"><span><i class="x"></i>X</span><span><i class="y"></i>Y</span><span><i class="z"></i>Z</span></div>
+          <div class="hud hud-bottom"><small>ARTICULAÇÕES</small><b>03 DOF</b></div>
+          <div id="viewport-error" class="viewport-error hidden">Não foi possível iniciar o visualizador 3D. Verifique a conexão com a biblioteca Three.js.</div>
+        </div>
+        <div class="visual-footer"><span><i class="swatch arm"></i> Estrutura do braço</span><span><i class="swatch joint"></i> Articulações</span><button id="reset-camera" class="link-button">↺ Redefinir câmera</button></div>
+      </section>
+
+      <aside class="panel control-panel">
+        <div class="panel-head">
+          <div class="head-title"><span class="index">02</span><div><h2>Controle dos eixos</h2><p>Defina os ângulos desejados</p></div></div>
+          <div class="axis-count">03 <small>EIXOS</small></div>
+        </div>
+        <div class="joint-list">
+          <article class="joint">
+            <div class="joint-heading"><div class="joint-label"><span>J1</span><div><b>Ombro</b><small>SHOULDER</small></div></div><output id="angleS-output">90°</output></div>
+            <input id="angleS" type="range" min="10" max="160" value="90" step="1">
+            <div class="range-ends"><span>10°</span><span>160°</span></div>
+          </article>
+          <article class="joint">
+            <div class="joint-heading"><div class="joint-label"><span>J2</span><div><b>Cotovelo</b><small>ELBOW</small></div></div><output id="angleE-output">90°</output></div>
+            <input id="angleE" type="range" min="10" max="160" value="90" step="1">
+            <div class="range-ends"><span>10°</span><span>160°</span></div>
+          </article>
+          <article class="joint">
+            <div class="joint-heading"><div class="joint-label"><span>J3</span><div><b>Mão / punho</b><small>WRIST</small></div></div><output id="angleH-output">90°</output></div>
+            <input id="angleH" type="range" min="10" max="160" value="90" step="1">
+            <div class="range-ends"><span>10°</span><span>160°</span></div>
+          </article>
+        </div>
+        <div class="prepared">
+          <div class="prepared-head"><small>COMANDO PREPARADO</small><span>3 valores · JSON</span></div>
+          <div class="prepared-values"><div><small>S</small><b id="summaryS">90°</b></div><div><small>E</small><b id="summaryE">90°</b></div><div><small>H</small><b id="summaryH">90°</b></div></div>
+        </div>
+        <div class="actions">
+          <button id="send-command" class="primary">Enviar comando <span>↗</span></button>
+          <button id="home-position" class="secondary">Posição inicial <span>⌂</span></button>
+        </div>
+        <p class="hint"><i>i</i> Os sliders atualizam apenas a prévia. O braço físico se move ao enviar o comando.</p>
+      </aside>
+    </section>
+
+    <section class="lower-grid">
+      <section class="panel lower-panel">
+        <div class="panel-head compact"><div class="head-title"><span class="index">03</span><div><h2>Estado do comando</h2><p>Últimos valores conhecidos pelo servidor</p></div></div><small class="endpoint">GET /comando</small></div>
+        <div class="telemetry">
+          <div><small>OMBRO <i>J1</i></small><b id="serverS">—<em>°</em></b></div>
+          <div><small>COTOVELO <i>J2</i></small><b id="serverE">—<em>°</em></b></div>
+          <div><small>MÃO / PUNHO <i>J3</i></small><b id="serverH">—<em>°</em></b></div>
+        </div>
+      </section>
+      <section class="panel lower-panel">
+        <div class="panel-head compact"><div class="head-title"><span class="index">04</span><div><h2>Atividade</h2><p>Retorno da comunicação HTTP</p></div></div><small id="activity-count" class="endpoint">01</small></div>
+        <div id="activity-log" class="activity-log" aria-live="polite"><div class="activity-entry"><i></i><time>--:--:--</time><span>Interface inicializada. Aguardando conexão.</span></div></div>
+      </section>
+    </section>
+  </main>
+  <footer><span>ARMOS · INTERFACE DE CONTROLE LOCAL</span><span>NODE.JS / EXPRESS <i></i> ESP32 / WI-FI</span></footer>
+</div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script type="module" src="/js/app.js"></script>
+</body>
+</html>
