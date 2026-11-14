@@ -135,7 +135,7 @@ Main components:
 
 ```bash
 git clone https://github.com/P96Z7/ESP32-robotic-arm-HTTP
-cd YOUR_PROJECT_FOLDER
+cd ESP32-robotic-arm-HTTP
 ```
 
 ### 2. Install dependencies
