@@ -134,7 +134,7 @@ Main components:
 ### 1. Clone the repository
 
 ```bash
-git clone YOUR_REPOSITORY_URL
+git clone https://github.com/P96Z7/ESP32-robotic-arm-HTTP
 cd YOUR_PROJECT_FOLDER
 ```
 
